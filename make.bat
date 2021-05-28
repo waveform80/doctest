@@ -28,6 +28,10 @@ if errorlevel 9009 (
 %SPHINXBUILD% -M %1 %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
 goto end
 
+:preview
+previewer.py %SOURCEDIR% %BUILDDIR%/html
+goto end
+
 :help
 %SPHINXBUILD% -M help %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
 
