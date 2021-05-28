@@ -1,0 +1,46 @@
+name: publish-master
+on:
+  push:
+    branches: [master]
+
+jobs:
+  publish:
+    env:
+      GITHUB_ACTOR:      ${{ github.actor }}
+      GITHUB_WORKSPACE:  ${{ github.workspace }}
+      GITHUB_REPOSITORY: ${{ github.repository }}
+      GITHUB_TOKEN:      ${{ github.token }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: prereqs
+        shell: bash
+        run: |
+          set -x
+          apt update
+          apt install -y git python3-sphinx
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: build
+        shell: bash
+        run: |
+          set -x
+          cd ${GITHUB_WORKSPACE}
+          make clean
+          make html
+          git log -1 --format="Updating docs for commit %H made on %ci by %an" > COMMITMSG
+      - name: deploy
+        shell: bash
+        run: |
+          set -x
+          cd ${GITHUB_WORKSPACE}
+          output=$(mktemp -d)
+          cp -av docs/* ${output}/
+          cd ${output}
+          touch .nojekyll
+          git config --global user.name "${GITHUB_ACTOR}"
+          git config --global user.email "${GITHUB_ACTOR}"@users.noreply.github.com
+          git init
+          git checkout -b gh-pages
+          git add .
+          git commit -F ${GITHUB_WORKSPACE}/COMMITMSG
+          git push https://token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY} gh-pages --force
