@@ -34,13 +34,13 @@ jobs:
           set -x
           cd ${GITHUB_WORKSPACE}
           output=$(mktemp -d)
-          cp -av docs/* ${output}/
+          cp -av build/html ${output}/
           cd ${output}
-          touch .nojekyll
+          mv html docs
           git config --global user.name "${GITHUB_ACTOR}"
           git config --global user.email "${GITHUB_ACTOR}"@users.noreply.github.com
           git init
           git checkout -b gh-pages
-          git add .
+          git add docs
           git commit -F ${GITHUB_WORKSPACE}/COMMITMSG
           git push https://token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY} gh-pages --force
