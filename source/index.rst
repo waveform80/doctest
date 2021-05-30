@@ -7,7 +7,7 @@ Table of Contents
     :maxdepth: 2
     :numbered:
 
-    test
+    contributions
 
 
 Indices and tables
