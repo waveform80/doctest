@@ -13,7 +13,7 @@ help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 preview:
-	./previewer.py "$(SOURCEDIR)" "$(BUILDDIR)"/html
+	./previewer.py -w "$(SOURCEDIR)" "$(BUILDDIR)"/html
 
 .PHONY: help preview Makefile
 

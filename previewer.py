@@ -43,6 +43,7 @@ def server(config, queue=None):
             hostname = socket.gethostname()
             print(f'Serving {config.html_path} HTTP on {host} port {port}')
             print(f'http://{hostname}:{port}/ ...')
+            # XXX Wait for queue message to indicate time to start?
             httpd.serve_forever()
     except Exception as e:
         if queue is not None:
@@ -50,34 +51,62 @@ def server(config, queue=None):
         raise
 
 
-def get_stats(path):
+def _iter_stats(path):
     for p in path.iterdir():
         if p.is_dir():
-            yield from get_stats(p)
+            yield from _iter_stats(p)
         else:
             yield p, p.stat()
 
 
+def get_stats(config):
+    return {
+        filepath: stat
+        for path in config.watch_path
+        for filepath, stat in _iter_stats(path)
+        if not any(filepath.match(pattern) for pattern in config.ignore)
+    }
+
+
+def get_changes(old_stats, new_stats):
+    # Yes, this is crude and could be more efficient but it's fast enough on a
+    # Pi so it'll be fast enough on anything else
+    return (
+        new_stats.keys() - old_stats.keys(), # new
+        old_stats.keys() - new_stats.keys(), # deleted
+        {                                    # modified
+            filepath
+            for filepath in old_stats.keys() & new_stats.keys()
+            if new_stats[filepath].st_mtime > old_stats[filepath].st_mtime
+        }
+    )
+
+
 def rebuild(config):
     print(f'Rebuilding...')
+    # XXX Make rebuild command configurable?
     sp.run(['make', 'html'], cwd=Path(__file__).parent)
-    return max(
-        stat.st_mtime for p, stat in get_stats(config.html_path))
+    return get_stats(config)
 
 
 def builder(config, queue=None):
     try:
-        output_time = rebuild(config)
+        old_stats = rebuild(config)
+        # XXX Add some message to the queue to indicate first build done and
+        # webserver can start?
         while True:
-            for p, stat in get_stats(config.source_path):
-                if any(p.match(pattern) for pattern in config.ignore):
-                    continue
-                if stat.st_mtime > output_time:
-                    print(f'Change detected in {p}')
-                    output_time = rebuild(config)
-                    break
+            new_stats = get_stats(config)
+            created, deleted, modified = get_changes(old_stats, new_stats)
+            if created or deleted or modified:
+                for filepath in created:
+                    print(f'New file, {filepath}')
+                for filepath in deleted:
+                    print(f'Deleted file, {filepath}')
+                for filepath in modified:
+                    print(f'Changed detected in {filepath}')
+                old_stats = rebuild(config)
             else:
-                time.sleep(0.1)  # make sure we're not a busy loop
+                time.sleep(0.5)  # make sure we're not a busy loop
     except Exception as e:
         if queue is not None:
             queue.put(e)
@@ -90,13 +119,13 @@ def main(args=None):
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        'source_path', default='source', type=Path, nargs='?',
-        help="The directory containing the source the HTML is generated from. "
-        "Default: %(default)s")
-    parser.add_argument(
         'html_path', default='build/html', type=Path, nargs='?',
         help="The base directory which you wish to server over HTTP. Default: "
         "%(default)s")
+    parser.add_argument(
+        '-w', '--watch-path', action='append', default=['source'],
+        help="Can be specified multiple times to append to the list of source "
+        "directories to watch for changes")
     parser.add_argument(
         '-i', '--ignore', action='append', default=['*.swp', '*.bak', '*~', '.*'],
         help="Can be specified multiple times to append to the list of "
@@ -108,6 +137,7 @@ def main(args=None):
         '--port', metavar='PORT', default='8000',
         help="The port to listen on. Default: %(default)s")
     config = parser.parse_args(args)
+    config.watch_path = [Path(p) for p in config.watch_path]
 
     queue = mp.Queue()
     builder_proc = mp.Process(target=builder, args=(config, queue), daemon=True)
