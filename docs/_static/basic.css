@@ -1,0 +1,78 @@
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;1,300;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+html {
+    color: #111;
+    font-family: "Ubuntu", "Open Sans", sans-serif;
+    font-size: 12pt;
+    font-weight: 300;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: grid;
+    grid-gap: 1.5rem;
+    grid-template-areas:
+        "header header header header"
+        "lmargin aside main rmargin"
+        "footer footer footer footer";
+    grid-template-rows: auto 1fr auto;
+    grid-template-columns: 1fr 18rem 44rem 1fr;
+}
+
+@media screen and (max-width: 65rem) {
+    body {
+        grid-template-columns: 0 calc(30% - 4.5rem) 70% 0;
+    }
+}
+
+@media screen and (max-width: 45rem) {
+    body {
+        grid-template-areas:
+            "header header header"
+            "lmargin aside rmargin"
+            "lmargin main rmargin"
+            "footer footer footer";
+        grid-template-rows: auto auto 1fr auto;
+        grid-template-columns: 0 calc(100% - 3rem) 0;
+    }
+}
+
+body > nav    { grid-area: header; }
+body > aside  { grid-area: aside; }
+body > main   { grid-area: main; }
+body > footer { grid-area: footer; }
+
+header, article, footer, main, aside, nav,
+h1, h2, h3, h4, h5, h6,
+ul, ol, dl, p, pre, table, hr, input {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+}
+
+ul ul, ul ol,
+ol ul, ol ol {
+    margin-bottom: 0;
+}
+
+h1 { font-size: 3rem; font-weight: 100; }
+h2 { font-size: 2.2rem; font-weight: 100; }
+h3 { font-size: 1.7rem; font-weight: 100; }
+h4 { font-size: 1.3rem; }
+h5 { font-size: 1.1rem; }
+h6 { font-size: 1rem; }
+
+a { text-decoration: none; color: #06c; }
+a:hover { text-decoration: underline; }
+a.headerlink { visibility: hidden; }
+*:hover > a.headerlink { visibility: visible; }
+
+pre, code {
+    font-family: "Ubuntu Mono", monospace;
+}
+
+pre {
+    background: rgba(0,0,0,.03);
+    padding: 0.5rem 1rem;
+}
